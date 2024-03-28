@@ -1,0 +1,76 @@
+name: release
+
+on:
+  push:
+    branches: [ main ]
+
+jobs:
+  build:
+    strategy:
+      matrix:
+        agent: [windows-latest]
+
+    runs-on: ${{ matrix.agent }}
+    
+    steps:
+    - uses: actions/checkout@v3
+    - name: Use Node.js
+      uses: actions/setup-node@v3
+      with:
+        node-version: 20.x
+        cache: 'npm'
+
+    - name: Install yarn
+      run: npm install --global yarn
+      
+    - name: Install node-sass
+      run:  npm install -g node-sass
+
+    - name: Setup .NET SDK
+      uses: actions/setup-dotnet@v3
+      with:
+        dotnet-version: |
+          8.0.x
+        include-prerelease: true
+        
+    - name: Install dotnet-exec tool
+      run: |
+        dotnet tool install -g dotnet-execute
+        dotnet-exec 'ApplicationHelper.RuntimeInfo'
+
+    - name: Setup ReleaseVersion
+      run: |
+        $ReleaseVersion = [System.DateTime]::UtcNow.ToString("yyyyMMdd")
+        Add-Content -Path $env:GITHUB_ENV -Value "ReleaseVersion=${ReleaseVersion}"
+    - name: Verify version
+      run: echo ${{ env.ReleaseVersion }}
+      
+    - name: Install dependencies
+      run: |
+        yarn install
+        yarn --cwd redisinsight/api/
+        
+    - name: Build
+      run: yarn build:statics
+
+    - name: Package
+      run: yarn package:prod
+
+    - name: Artifacts
+      run: |        
+        mkdir ./artifacts
+        cd ./release
+        ls
+        cd ..
+        Get-ChildItem -Path "./release/*.exe" | Move-Item -Destination "./artifacts"
+        
+    - name: release
+      uses: marvinpinto/action-automatic-releases@latest
+      with:
+        repo_token: "${{ secrets.GITHUB_TOKEN }}"
+        automatic_release_tag: ${{ env.ReleaseVersion }}
+        title: ${{ env.ReleaseVersion }}
+        prerelease: false
+        files: |
+          ./artifacts/*
+        
