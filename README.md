@@ -7,7 +7,21 @@
 
 
 Redis Insight is a visual tool that provides capabilities to design, develop, and optimize your Redis application.
-Query, analyse and interact with your Redis data. [Download it here](https://redis.io/insight/#insight-form)!
+Query, analyse and interact with your Redis data.
+
+Download links:
+
+Windows:
+https://download.redisinsight.redis.com/latest/RedisInsight-v2-win-installer.exe
+
+Linux:
+https://download.redisinsight.redis.com/latest/RedisInsight-v2-linux-x86_64.AppImage
+https://download.redisinsight.redis.com/latest/RedisInsight-v2-linux-amd64.deb
+
+MacOS:
+https://download.redisinsight.redis.com/latest/RedisInsight-v2-mac-x64.dmg
+https://download.redisinsight.redis.com/latest/RedisInsight-v2-mac-arm64.dmg
+
 
 ![Redis Insight Browser screenshot](/.github/redisinsight_browser.png)
 
