@@ -30,10 +30,8 @@ jobs:
       run: |
         yarn install
         yarn --cwd redisinsight/api/
-        https://github.com/WeihanLi/RedisInsight/actions
     - name: Build
       run: yarn build:statics
-
     - name: Package
       run: yarn package:prod
 
@@ -50,12 +48,10 @@ jobs:
       with:
         dotnet-version: |
           9.0.x
-        
     - name: Install dotnet-exec tool
       run: |
         dotnet tool install -g dotnet-execute
         dotnet-exec 'ApplicationHelper.RuntimeInfo'
-
     - name: Setup ReleaseVersion
       run: dotnet-exec ./scripts/export-release-version.cs    
 
