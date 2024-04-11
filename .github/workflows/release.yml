@@ -25,30 +25,12 @@ jobs:
       
     - name: Install node-sass
       run:  npm install -g node-sass
-
-    - name: Setup .NET SDK
-      uses: actions/setup-dotnet@v3
-      with:
-        dotnet-version: |
-          8.0.x
-        include-prerelease: true
-        
-    - name: Install dotnet-exec tool
-      run: |
-        dotnet tool install -g dotnet-execute
-        dotnet-exec 'ApplicationHelper.RuntimeInfo'
-
-    - name: Setup ReleaseVersion
-      run: |
-        dotnet-exec ./scripts/export-release-version.cs
-    - name: Verify version
-      run: echo ${{ env.ReleaseVersion }}
-      
+  
     - name: Install dependencies
       run: |
         yarn install
         yarn --cwd redisinsight/api/
-        
+        https://github.com/WeihanLi/RedisInsight/actions
     - name: Build
       run: yarn build:statics
 
@@ -62,7 +44,21 @@ jobs:
         ls
         cd ..
         Get-ChildItem -Path "./release/*.exe" | Move-Item -Destination "./artifacts"
+
+    - name: Setup .NET SDK
+      uses: actions/setup-dotnet@v4
+      with:
+        dotnet-version: |
+          9.0.x
         
+    - name: Install dotnet-exec tool
+      run: |
+        dotnet tool install -g dotnet-execute
+        dotnet-exec 'ApplicationHelper.RuntimeInfo'
+
+    - name: Setup ReleaseVersion
+      run: dotnet-exec ./scripts/export-release-version.cs    
+
     - name: release
       uses: marvinpinto/action-automatic-releases@latest
       with:
