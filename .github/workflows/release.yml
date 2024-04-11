@@ -40,8 +40,7 @@ jobs:
 
     - name: Setup ReleaseVersion
       run: |
-        $ReleaseVersion = [System.DateTime]::UtcNow.ToString("yyyyMMdd")
-        Add-Content -Path $env:GITHUB_ENV -Value "ReleaseVersion=${ReleaseVersion}"
+        dotnet-exec ./scripts/export-release-version.cs
     - name: Verify version
       run: echo ${{ env.ReleaseVersion }}
       
