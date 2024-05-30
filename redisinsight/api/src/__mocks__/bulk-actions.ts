@@ -26,6 +26,26 @@ export const mockBulkActionOverview = {
   },
 };
 
+export const mockDefaultDataManifest = {
+  files: [
+    {
+      path: 'test_common',
+    },
+    {
+      path: 'test_json',
+      modules: ['rejson'],
+    },
+    {
+      path: 'not_existing',
+      modules: ['not_existing_module'],
+    },
+  ],
+};
+
+export const mockCombinedStream = {
+  append: jest.fn(),
+};
+
 export const mockBulkActionOverviewMatcher = {
   ...mockBulkActionOverview,
   duration: jasmine.any(Number),
@@ -72,4 +92,5 @@ export const mockBulkActionsAnalytics = () => ({
   sendActionStopped: jest.fn(),
   sendActionSucceed: jest.fn(),
   sendActionFailed: jest.fn(),
+  sendImportSamplesUploaded: jest.fn(),
 });

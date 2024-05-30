@@ -33,6 +33,31 @@ export enum InfiniteMessagesIds {
 const MANAGE_DB_LINK = 'https://app.redislabs.com/#/databases/?utm_source=redisinsight&utm_medium=main&utm_campaign=main'
 
 export const INFINITE_MESSAGES = {
+  AUTHENTICATING: () => ({
+    id: InfiniteMessagesIds.oAuthProgress,
+    Inner: (
+      <div
+        role="presentation"
+        data-testid="authenticating-notification"
+      >
+        <EuiFlexGroup justifyContent="flexEnd" direction="row" gutterSize="none">
+          <EuiFlexItem grow={false}>
+            <EuiLoadingSpinner className="infiniteMessage__icon" />
+          </EuiFlexItem>
+          <EuiFlexItem grow>
+            <EuiTitle className="infiniteMessage__title">
+              <span>
+                Authenticating…
+              </span>
+            </EuiTitle>
+            <EuiText size="xs">
+              This may take several seconds, but it is totally worth it!
+            </EuiText>
+          </EuiFlexItem>
+        </EuiFlexGroup>
+      </div>
+    )
+  }),
   PENDING_CREATE_DB: (step?: CloudJobStep) => ({
     id: InfiniteMessagesIds.oAuthProgress,
     Inner: (
@@ -58,7 +83,7 @@ export const INFINITE_MESSAGES = {
             </EuiText>
             <EuiSpacer size="m" />
             <EuiText size="xs">
-              You can continue working in RedisInsight, and we will notify you once done.
+              You can continue working in Redis Insight, and we will notify you once done.
             </EuiText>
           </EuiFlexItem>
         </EuiFlexGroup>
@@ -154,7 +179,7 @@ export const INFINITE_MESSAGES = {
       >
         <EuiTitle className="infiniteMessage__title"><span>You already have a free Redis Cloud subscription.</span></EuiTitle>
         <EuiText size="xs">
-          Do you want to import your existing database into RedisInsight?
+          Do you want to import your existing database into Redis Insight?
         </EuiText>
         <EuiSpacer size="m" />
         <EuiFlexGroup justifyContent="spaceBetween" gutterSize="none">
@@ -266,11 +291,11 @@ export const INFINITE_MESSAGES = {
         </EuiTitle>
         <EuiText size="s">
           <>
-            With RedisInsight
+            With Redis Insight
             {` ${version} `}
             you have access to new useful features and optimizations.
             <br />
-            Restart RedisInsight to install updates.
+            Restart Redis Insight to install updates.
           </>
         </EuiText>
         <br />

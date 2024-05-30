@@ -1,11 +1,25 @@
 import React from 'react'
 import { mock } from 'ts-mockito'
 import { cloneDeep } from 'lodash'
-import { render, screen, fireEvent, mockedStore, cleanup } from 'uiSrc/utils/test-utils'
+import {
+  render,
+  screen,
+  fireEvent,
+  mockedStore,
+  cleanup,
+  waitForEuiPopoverVisible,
+  waitForStack
+} from 'uiSrc/utils/test-utils'
 
-import { changeSelectedTab, toggleInsightsPanel } from 'uiSrc/slices/panels/insights'
-import { InsightsPanelTabs } from 'uiSrc/slices/interfaces/insights'
-import { sendEventTelemetry, TelemetryEvent } from 'uiSrc/telemetry'
+import { sendEventTelemetry } from 'uiSrc/telemetry'
+import { apiService } from 'uiSrc/services'
+import { bulkImportDefaultData, bulkImportDefaultDataSuccess } from 'uiSrc/slices/browser/bulkActions'
+import { addMessageNotification } from 'uiSrc/slices/app/notifications'
+import successMessages from 'uiSrc/components/notifications/success-messages'
+import { changeKeyViewType, loadKeys } from 'uiSrc/slices/browser/keys'
+import { KeyViewType } from 'uiSrc/slices/interfaces/keys'
+import { changeSelectedTab, changeSidePanel, resetExplorePanelSearch } from 'uiSrc/slices/panels/sidePanels'
+import { InsightsPanelTabs, SidePanels } from 'uiSrc/slices/interfaces/insights'
 import NoKeysFound, { Props } from './NoKeysFound'
 
 const mockedProps = mock<Props>()
@@ -18,7 +32,7 @@ jest.mock('uiSrc/telemetry', () => ({
 jest.mock('uiSrc/slices/instances/instances', () => ({
   ...jest.requireActual('uiSrc/slices/instances/instances'),
   connectedInstanceSelector: jest.fn().mockReturnValue({
-    provider: 'RE_CLOUD'
+    provider: 'RE_CLOUD',
   }),
 }))
 
@@ -44,34 +58,33 @@ describe('NoKeysFound', () => {
     expect(onAddMock).toBeCalled()
   })
 
-  it('should call proper events on click insights', () => {
+  it('should call proper actions after click load sample data', async () => {
+    const sendEventTelemetryMock = jest.fn();
+    (sendEventTelemetry as jest.Mock).mockImplementation(() => sendEventTelemetryMock)
+    apiService.post = jest.fn().mockResolvedValueOnce({ status: 200, data: { data: {} } })
+
     render(<NoKeysFound {...mockedProps} onAddKeyPanel={jest.fn()} />)
 
-    fireEvent.click(screen.getByTestId('explore-msg-btn'))
+    fireEvent.click(screen.getByTestId('load-sample-data-btn'))
+    await waitForEuiPopoverVisible()
 
-    expect(store.getActions()).toEqual([
+    fireEvent.click(screen.getByTestId('load-sample-data-btn-confirm'))
+
+    await waitForStack()
+
+    const expectedActions = [
+      bulkImportDefaultData(),
+      bulkImportDefaultDataSuccess(),
+      addMessageNotification(
+        successMessages.UPLOAD_DATA_BULK()
+      ),
       changeSelectedTab(InsightsPanelTabs.Explore),
-      toggleInsightsPanel(true)
-    ])
-  })
+      changeSidePanel(SidePanels.Insights),
+      resetExplorePanelSearch(),
+      changeKeyViewType(KeyViewType.Tree),
+      loadKeys(),
+    ]
 
-  it('should call proper events on click insights', () => {
-    const sendEventTelemetryMock = jest.fn()
-
-    sendEventTelemetry.mockImplementation(() => sendEventTelemetryMock)
-
-    render(<NoKeysFound {...mockedProps} onAddKeyPanel={jest.fn()} />)
-
-    fireEvent.click(screen.getByTestId('explore-msg-btn'))
-
-    expect(sendEventTelemetry).toBeCalledWith({
-      event: TelemetryEvent.INSIGHTS_PANEL_OPENED,
-      eventData: {
-        databaseId: 'instanceId',
-        provider: 'RE_CLOUD',
-        source: 'browser',
-      }
-    })
-    sendEventTelemetry.mockRestore()
+    expect(store.getActions().slice(0, expectedActions.length)).toEqual(expectedActions)
   })
 })

@@ -38,6 +38,7 @@ export class ExploreTab {
     uploadDataBulkBtn = Selector('[data-testid=upload-data-bulk-btn]');
     uploadDataBulkApplyBtn = Selector('[data-testid=upload-data-bulk-apply-btn]');
     downloadFileBtn = Selector('[data-testid=download-redis-upload-file]');
+    tutorialLink = Selector('[data-testid=redisinsight-link]');
 
     //CSS
     cssTutorialDeleteIcon = '[data-testid^=delete-tutorial-icon-]';
@@ -115,7 +116,7 @@ export class ExploreTab {
     async waitUntilImageRendered(selector: Selector): Promise<void> {
         const searchTimeout = 5 * 1000; // 5 sec maximum wait
         const startTime = Date.now();
-        let imageHeight = await selector.getStyleProperty('height');
+        let imageHeight;
 
         do {
             imageHeight = await selector.getStyleProperty('height');

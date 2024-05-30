@@ -9,7 +9,12 @@ import { setMonitorInitialState, showMonitor } from 'uiSrc/slices/cli/monitor'
 import { Pages } from 'uiSrc/constants/pages'
 import { connectedInstanceSelector } from 'uiSrc/slices/instances/instances'
 import { dbAnalysisSelector, setDatabaseAnalysisViewTab } from 'uiSrc/slices/analytics/dbAnalysis'
-import { incrementOnboardStepAction, setOnboardNextStep, setOnboardPrevStep } from 'uiSrc/slices/app/features'
+import {
+  appFeatureFlagsFeaturesSelector,
+  incrementOnboardStepAction,
+  setOnboardNextStep,
+  setOnboardPrevStep
+} from 'uiSrc/slices/app/features'
 import { ConnectionType } from 'uiSrc/slices/interfaces'
 import { DatabaseAnalysisViewTab } from 'uiSrc/slices/interfaces/analytics'
 import OnboardingEmoji from 'uiSrc/assets/img/onboarding-emoji.svg'
@@ -22,11 +27,15 @@ import { CodeBlock } from 'uiSrc/components'
 
 import {
   changeSelectedTab,
+  changeSidePanel,
   resetExplorePanelSearch,
-  setExplorePanelIsPageOpen,
-  toggleInsightsPanel
-} from 'uiSrc/slices/panels/insights'
-import { InsightsPanelTabs } from 'uiSrc/slices/interfaces/insights'
+  setExplorePanelIsPageOpen
+} from 'uiSrc/slices/panels/sidePanels'
+import { InsightsPanelTabs, SidePanels } from 'uiSrc/slices/interfaces/insights'
+import { EXTERNAL_LINKS } from 'uiSrc/constants/links'
+import { FeatureFlags } from 'uiSrc/constants'
+import { isAnyFeatureEnabled } from 'uiSrc/utils/features'
+
 import styles from './styles.module.scss'
 
 const sendTelemetry = (databaseId: string, step: string, action: string) => sendEventTelemetry({
@@ -92,6 +101,12 @@ const ONBOARDING_FEATURES = {
     title: 'Filter and search',
     Inner: () => {
       const { id: connectedInstanceId = '' } = useSelector(connectedInstanceSelector)
+      const {
+        [FeatureFlags.databaseChat]: databaseChatFeature,
+        [FeatureFlags.documentationChat]: documentationChatFeature,
+      } = useSelector(appFeatureFlagsFeaturesSelector)
+      const isAnyChatAvailable = isAnyFeatureEnabled([databaseChatFeature, documentationChatFeature])
+
       const dispatch = useDispatch()
       const telemetryArgs: TelemetryArgs = [connectedInstanceId, OnboardingStepName.BrowserFilters]
 
@@ -100,7 +115,36 @@ const ONBOARDING_FEATURES = {
         onSkip: () => sendClosedTelemetryEvent(...telemetryArgs),
         onBack: () => sendBackTelemetryEvent(...telemetryArgs),
         onNext: () => {
+          if (isAnyChatAvailable) {
+            dispatch(changeSidePanel(SidePanels.AiAssistant))
+            sendNextTelemetryEvent(...telemetryArgs)
+            return
+          }
+
+          dispatch(setOnboardNextStep())
           dispatch(openCli())
+
+          sendNextTelemetryEvent(...telemetryArgs)
+        }
+      }
+    }
+  },
+  BROWSER_COPILOT: {
+    step: OnboardingSteps.BrowserCopilot,
+    title: 'Try Redis Copilot',
+    Inner: () => {
+      const { id: connectedInstanceId = '' } = useSelector(connectedInstanceSelector)
+
+      const dispatch = useDispatch()
+      const telemetryArgs: TelemetryArgs = [connectedInstanceId, OnboardingStepName.BrowserCopilot]
+
+      return {
+        content: 'Redis Copilot is an AI-powered companion that lets you learn about Redis and explore your data, in a conversational manner, while also providing context-aware assistance to build search queries.',
+        onSkip: () => sendClosedTelemetryEvent(...telemetryArgs),
+        onBack: () => sendBackTelemetryEvent(...telemetryArgs),
+        onNext: () => {
+          dispatch(openCli())
+          dispatch(changeSidePanel(null))
           sendNextTelemetryEvent(...telemetryArgs)
         }
       }
@@ -111,13 +155,28 @@ const ONBOARDING_FEATURES = {
     title: 'CLI',
     Inner: () => {
       const { id: connectedInstanceId = '' } = useSelector(connectedInstanceSelector)
+      const {
+        [FeatureFlags.databaseChat]: databaseChatFeature,
+        [FeatureFlags.documentationChat]: documentationChatFeature,
+      } = useSelector(appFeatureFlagsFeaturesSelector)
+      const isAnyChatAvailable = isAnyFeatureEnabled([databaseChatFeature, documentationChatFeature])
+
       const dispatch = useDispatch()
       const telemetryArgs: TelemetryArgs = [connectedInstanceId, OnboardingStepName.BrowserCLI]
 
       return {
         content: 'Use CLI to run Redis commands.',
         onSkip: () => sendClosedTelemetryEvent(...telemetryArgs),
-        onBack: () => sendBackTelemetryEvent(...telemetryArgs),
+        onBack: () => {
+          if (isAnyChatAvailable) {
+            dispatch(changeSidePanel(SidePanels.AiAssistant))
+            sendNextTelemetryEvent(...telemetryArgs)
+            return
+          }
+
+          dispatch(setOnboardPrevStep())
+          sendBackTelemetryEvent(...telemetryArgs)
+        },
         onNext: () => {
           dispatch(openCliHelper())
           sendNextTelemetryEvent(...telemetryArgs)
@@ -218,7 +277,7 @@ const ONBOARDING_FEATURES = {
             <EuiSpacer size="xs" />
             Take advantage of syntax highlighting, intelligent auto-complete, and working with commands in editor mode.
             <EuiSpacer size="xs" />
-            Workbench visualizes complex <a href="https://redis.io/docs/about/about-stack/" target="_blank" rel="noreferrer">Redis Stack</a> data
+            Workbench visualizes complex <a href={EXTERNAL_LINKS.redisStack} target="_blank" rel="noreferrer">Redis Stack</a> data
             models such as documents, graphs, and time series.
             Or you <a href="https://github.com/RedisInsight/Packages" target="_blank" rel="noreferrer">can build your own visualization</a>.
 
@@ -262,7 +321,7 @@ const ONBOARDING_FEATURES = {
         },
         onNext: () => {
           dispatch(changeSelectedTab(InsightsPanelTabs.Explore))
-          dispatch(toggleInsightsPanel(true))
+          dispatch(changeSidePanel(SidePanels.Insights))
           sendNextTelemetryEvent(...telemetryArgs)
         },
       }
@@ -283,7 +342,7 @@ const ONBOARDING_FEATURES = {
         onSkip: () => sendClosedTelemetryEvent(...telemetryArgs),
         onBack: () => {
           history.push(Pages.workbench(connectedInstanceId))
-          dispatch(toggleInsightsPanel(false))
+          dispatch(changeSidePanel(null))
           sendBackTelemetryEvent(...telemetryArgs)
         },
         onNext: () => {
@@ -306,9 +365,9 @@ const ONBOARDING_FEATURES = {
       return {
         content: (
           <>
-            Share your Redis expertise with your team and the wider community by building custom RedisInsight tutorials.
+            Share your Redis expertise with your team and the wider community by building custom Redis Insight tutorials.
             <EuiSpacer size="xs" />
-            Use our <a href="https://github.com/RedisInsight/Tutorials" target="_blank" rel="noreferrer">instructions</a> to
+            Use our <a href={EXTERNAL_LINKS.guidesRepo} target="_blank" rel="noreferrer">instructions</a> to
             describe your implementations of Redis for other users to follow and
             interact with in the context of a connected Redis database
           </>
@@ -316,7 +375,7 @@ const ONBOARDING_FEATURES = {
         onSkip: () => sendClosedTelemetryEvent(...telemetryArgs),
         onBack: () => sendBackTelemetryEvent(...telemetryArgs),
         onNext: () => {
-          dispatch(toggleInsightsPanel(false))
+          dispatch(changeSidePanel(null))
           history.push(Pages.clusterDetails(connectedInstanceId))
           sendNextTelemetryEvent(...telemetryArgs)
         }
@@ -342,7 +401,7 @@ const ONBOARDING_FEATURES = {
         onSkip: () => sendClosedTelemetryEvent(...telemetryArgs),
         onBack: () => {
           dispatch(changeSelectedTab(InsightsPanelTabs.Explore))
-          dispatch(toggleInsightsPanel(true))
+          dispatch(changeSidePanel(SidePanels.Insights))
           history.push(Pages.workbench(connectedInstanceId))
           sendBackTelemetryEvent(...telemetryArgs)
         },
@@ -377,7 +436,7 @@ const ONBOARDING_FEATURES = {
         onBack: () => {
           if (connectionType !== ConnectionType.Cluster) {
             dispatch(changeSelectedTab(InsightsPanelTabs.Explore))
-            dispatch(toggleInsightsPanel(true))
+            dispatch(changeSidePanel(SidePanels.Insights))
             dispatch(setOnboardPrevStep())
             history.push(Pages.workbench(connectedInstanceId))
           }

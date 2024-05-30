@@ -1,5 +1,6 @@
-import { join } from 'path';
+import { join, posix } from 'path';
 import * as os from 'os';
+import { trim } from 'lodash';
 import { version } from '../package.json';
 
 const homedir = join(__dirname, '..');
@@ -15,14 +16,31 @@ const defaultsDir = process.env.RI_BUILD_TYPE === 'ELECTRON' && process['resourc
   ? join(process['resourcesPath'], 'defaults')
   : join(__dirname, '..', 'defaults');
 
+const proxyPath = trim(process.env.RI_PROXY_PATH, '/');
+
+const customPluginsUri = posix.join('/', proxyPath, 'plugins');
+const staticUri = posix.join('/', proxyPath, 'static');
+const tutorialsUri = posix.join('/', proxyPath, 'static', 'tutorials');
+const customTutorialsUri = posix.join('/', proxyPath, 'static', 'custom-tutorials');
+const contentUri = posix.join('/', proxyPath, 'static', 'content');
+const defaultPluginsUri = posix.join('/', proxyPath, 'static', 'plugins');
+const pluginsAssetsUri = posix.join('/', proxyPath, 'static', 'resources', 'plugins');
+
+const socketPath = posix.join('/', proxyPath, 'socket.io');
+const dataDir = process.env.RI_BUILD_TYPE === 'ELECTRON' && process['resourcesPath']
+  ? join(process['resourcesPath'], 'data')
+  : join(__dirname, '..', 'data');
+
 export default {
   dir_path: {
     tmpDir: os.tmpdir(),
     homedir,
     prevHomedir: homedir,
+    dataDir: process.env.RI_DATA_DIR || dataDir,
     staticDir,
     defaultsDir,
     logs: join(homedir, 'logs'),
+    customConfig: join(homedir, 'config.json'),
     defaultPlugins: join(staticDir, 'plugins'),
     customPlugins: join(homedir, 'plugins'),
     customTutorials: join(homedir, 'custom-tutorials'),
@@ -43,21 +61,22 @@ export default {
     port: parseInt(process.env.RI_APP_PORT, 10) || 5540,
     docPrefix: 'api/docs',
     globalPrefix: 'api',
-    customPluginsUri: '/plugins',
-    staticUri: '/static',
-    tutorialsUri: '/static/tutorials',
-    customTutorialsUri: '/static/custom-tutorials',
-    contentUri: '/static/content',
-    defaultPluginsUri: '/static/plugins',
-    pluginsAssetsUri: '/static/resources/plugins',
+    customPluginsUri,
+    staticUri,
+    tutorialsUri,
+    customTutorialsUri,
+    contentUri,
+    defaultPluginsUri,
+    pluginsAssetsUri,
     base: process.env.RI_BASE || '/',
+    proxyPath,
     secretStoragePassword: process.env.RI_SECRET_STORAGE_PASSWORD,
     encryptionKey: process.env.RI_ENCRYPTION_KEY,
     tlsCert: process.env.RI_SERVER_TLS_CERT,
     tlsKey: process.env.RI_SERVER_TLS_KEY,
     staticContent: !!process.env.RI_SERVE_STATICS || true,
     buildType: process.env.RI_BUILD_TYPE || 'DOCKER_ON_PREMISE',
-    appVersion: process.env.RI_APP_VERSION || '2.46.0',
+    appVersion: process.env.RI_APP_VERSION || '2.48.0',
     requestTimeout: parseInt(process.env.RI_REQUEST_TIMEOUT, 10) || 25000,
     excludeRoutes: [],
     excludeAuthRoutes: [],
@@ -65,6 +84,7 @@ export default {
   sockets: {
     cors: process.env.RI_SOCKETS_CORS ? process.env.RI_SOCKETS_CORS === 'true' : false,
     serveClient: process.env.RI_SOCKETS_SERVE_CLIENT ? process.env.RI_SOCKETS_SERVE_CLIENT === 'true' : false,
+    path: socketPath,
   },
   db: {
     database: join(homedir, 'redisinsight.db'),
@@ -217,10 +237,12 @@ export default {
     jobIterationInterval: parseInt(process.env.RI_CLOUD_JOB_ITERATION_INTERVAL, 10) || 10_000, // 10 sec
     discoveryTimeout: parseInt(process.env.RI_CLOUD_DISCOVERY_TIMEOUT, 10) || 60 * 1000, // 1 min
     databaseConnectionTimeout: parseInt(process.env.RI_CLOUD_DATABASE_CONNECTION_TIMEOUT, 10) || 30 * 1000,
+    renewTokensBeforeExpire: parseInt(process.env.RI_CLOUD_DATABASE_CONNECTION_TIMEOUT, 10) || 2 * 60_000, // 2min
     idp: {
       google: {
         authorizeUrl: process.env.RI_CLOUD_IDP_GOOGLE_AUTHORIZE_URL || process.env.RI_CLOUD_IDP_AUTHORIZE_URL,
         tokenUrl: process.env.RI_CLOUD_IDP_GOOGLE_TOKEN_URL || process.env.RI_CLOUD_IDP_TOKEN_URL,
+        revokeTokenUrl: process.env.RI_CLOUD_IDP_GOOGLE_REVOKE_TOKEN_URL || process.env.RI_CLOUD_IDP_REVOKE_TOKEN_URL,
         issuer: process.env.RI_CLOUD_IDP_GOOGLE_ISSUER || process.env.RI_CLOUD_IDP_ISSUER,
         clientId: process.env.RI_CLOUD_IDP_GOOGLE_CLIENT_ID || process.env.RI_CLOUD_IDP_CLIENT_ID,
         redirectUri: process.env.RI_CLOUD_IDP_GOOGLE_REDIRECT_URI || process.env.RI_CLOUD_IDP_REDIRECT_URI,
@@ -229,11 +251,19 @@ export default {
       github: {
         authorizeUrl: process.env.RI_CLOUD_IDP_GH_AUTHORIZE_URL || process.env.RI_CLOUD_IDP_AUTHORIZE_URL,
         tokenUrl: process.env.RI_CLOUD_IDP_GH_TOKEN_URL || process.env.RI_CLOUD_IDP_TOKEN_URL,
+        revokeTokenUrl: process.env.RI_CLOUD_IDP_GH_REVOKE_TOKEN_URL || process.env.RI_CLOUD_IDP_REVOKE_TOKEN_URL,
         issuer: process.env.RI_CLOUD_IDP_GH_ISSUER || process.env.RI_CLOUD_IDP_ISSUER,
         clientId: process.env.RI_CLOUD_IDP_GH_CLIENT_ID || process.env.RI_CLOUD_IDP_CLIENT_ID,
         redirectUri: process.env.RI_CLOUD_IDP_GH_REDIRECT_URI || process.env.RI_CLOUD_IDP_REDIRECT_URI,
         idp: process.env.RI_CLOUD_IDP_GH_ID,
       },
     },
+  },
+  ai: {
+    convAiApiUrl: process.env.RI_AI_CONVAI_API_URL || 'https://staging.redis.io/convai/api',
+    convAiToken: process.env.RI_AI_CONVAI_TOKEN,
+    querySocketUrl: process.env.RI_AI_QUERY_SOCKET_URL || 'https://app-sm.k8s-cloudapi.sm-qa.qa.redislabs.com',
+    querySocketPath: process.env.RI_AI_QUERY_SOCKET_PATH || '/api/v1/cloud-copilot-service/socket.io/',
+    queryHistoryLimit: parseInt(process.env.RI_AI_QUERY_HISTORY_LIMIT, 10) || 20,
   },
 };

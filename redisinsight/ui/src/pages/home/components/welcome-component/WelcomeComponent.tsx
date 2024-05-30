@@ -1,4 +1,4 @@
-import { EuiIcon, EuiFlexGroup, EuiFlexItem, EuiTitle, EuiSpacer, EuiFlexGrid } from '@elastic/eui'
+import { EuiFlexGrid, EuiFlexGroup, EuiFlexItem, EuiIcon, EuiSpacer, EuiTitle } from '@elastic/eui'
 import React, { useContext, useEffect, useState } from 'react'
 import { useSelector } from 'react-redux'
 import cx from 'classnames'
@@ -9,10 +9,9 @@ import { setTitle } from 'uiSrc/utils'
 import { ThemeContext } from 'uiSrc/contexts/themeContext'
 import { ExplorePanelTemplate } from 'uiSrc/templates'
 import { sendEventTelemetry, sendPageViewTelemetry, TelemetryEvent, TelemetryPageView } from 'uiSrc/telemetry'
-import darkLogo from 'uiSrc/assets/img/dark_logo.svg'
-import lightLogo from 'uiSrc/assets/img/light_logo.svg'
-import { ReactComponent as CloudStars } from 'uiSrc/assets/img/oauth/stars.svg'
-import { ReactComponent as CloudIcon } from 'uiSrc/assets/img/oauth/cloud.svg'
+import Logo from 'uiSrc/assets/img/logo.svg'
+import CloudStars from 'uiSrc/assets/img/oauth/stars.svg?react'
+import CloudIcon from 'uiSrc/assets/img/oauth/cloud.svg?react'
 
 import { appFeatureFlagsFeaturesSelector } from 'uiSrc/slices/app/features'
 import { contentSelector } from 'uiSrc/slices/content/create-redis-buttons'
@@ -21,13 +20,8 @@ import { AddDbType, HELP_LINKS, IHelpGuide } from 'uiSrc/pages/home/constants'
 import { CapabilityPromotion } from 'uiSrc/pages/home/components/capability-promotion'
 
 import { ContentCreateRedis } from 'uiSrc/slices/interfaces/content'
-import {
-  FeatureFlagComponent,
-  ImportDatabasesDialog,
-  OAuthSocialHandlerDialog,
-  OAuthSsoHandlerDialog
-} from 'uiSrc/components'
-import { OAuthSocialSource } from 'uiSrc/slices/interfaces'
+import { FeatureFlagComponent, ImportDatabasesDialog, OAuthSsoHandlerDialog } from 'uiSrc/components'
+import { OAuthSocialAction, OAuthSocialSource } from 'uiSrc/slices/interfaces'
 import { getPathToResource } from 'uiSrc/services/resourcesService'
 
 import styles from './styles.module.scss'
@@ -46,7 +40,7 @@ const WelcomeComponent = ({ onAddInstance }: Props) => {
 
   const { theme } = useContext(ThemeContext)
 
-  setTitle('Welcome to RedisInsight')
+  setTitle('Welcome to Redis Insight')
 
   const CONNECT_BUTTONS = [
     {
@@ -81,7 +75,7 @@ const WelcomeComponent = ({ onAddInstance }: Props) => {
         },
         {
           title: 'Import database connections from a file',
-          description: (<>Migrate your database connections to <br />RedisInsight</>),
+          description: (<>Migrate your database connections to <br />Redis Insight</>),
           iconType: 'download',
           onClick: () => handleClickImportDbBtn(),
           testId: 'import-from-file-btn'
@@ -156,7 +150,7 @@ const WelcomeComponent = ({ onAddInstance }: Props) => {
             className={cx(styles.section, styles.btn, styles.promoButton)}
             onClick={(e) => {
               handleClickLink(HELP_LINKS.cloud.event, { source: OAuthSocialSource.WelcomeScreen })
-              ssoCloudHandlerClick(e, OAuthSocialSource.WelcomeScreen)
+              ssoCloudHandlerClick(e, { source: OAuthSocialSource.WelcomeScreen, action: OAuthSocialAction.Create })
             }}
             target="_blank"
             style={{
@@ -218,7 +212,7 @@ const WelcomeComponent = ({ onAddInstance }: Props) => {
           <img
             alt="logo"
             className={styles.logo}
-            src={theme === Theme.Dark ? darkLogo : lightLogo}
+            src={Logo}
           />
 
           <div className={styles.controls}>
@@ -250,15 +244,18 @@ const WelcomeComponent = ({ onAddInstance }: Props) => {
                     if (button?.feature === FeatureFlags.cloudSso) {
                       return (
                         <FeatureFlagComponent key="cloudSsoComponent" name={FeatureFlags.cloudSso}>
-                          <OAuthSocialHandlerDialog>
+                          <OAuthSsoHandlerDialog>
                             {(socialCloudHandlerClick) => (
                               <>
                                 {renderButton(button, (e: React.MouseEvent) => {
-                                  socialCloudHandlerClick(e, OAuthSocialSource.WelcomeScreen)
+                                  socialCloudHandlerClick(e, {
+                                    source: OAuthSocialSource.WelcomeScreen,
+                                    action: OAuthSocialAction.Create
+                                  })
                                 })}
                               </>
                             )}
-                          </OAuthSocialHandlerDialog>
+                          </OAuthSsoHandlerDialog>
                         </FeatureFlagComponent>
                       )
                     }

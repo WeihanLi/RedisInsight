@@ -3,7 +3,7 @@ import {
   MiddlewareConsumer, Module, NestModule, OnModuleInit,
 } from '@nestjs/common';
 import { ServeStaticModule } from '@nestjs/serve-static';
-import { RouterModule } from 'nest-router';
+import { RouterModule } from '@nestjs/core';
 import { join } from 'path';
 import config, { Config } from 'src/utils/config';
 import { PluginModule } from 'src/modules/plugin/plugin.module';
@@ -23,6 +23,8 @@ import { DatabaseImportModule } from 'src/modules/database-import/database-impor
 import { SingleUserAuthMiddleware } from 'src/common/middlewares/single-user-auth.middleware';
 import { CustomTutorialModule } from 'src/modules/custom-tutorial/custom-tutorial.module';
 import { CloudModule } from 'src/modules/cloud/cloud.module';
+import { AiChatModule } from 'src/modules/ai/chat/ai-chat.module';
+import { AiQueryModule } from 'src/modules/ai/query/ai-query.module';
 import { BrowserModule } from './modules/browser/browser.module';
 import { RedisEnterpriseModule } from './modules/redis-enterprise/redis-enterprise.module';
 import { RedisSentinelModule } from './modules/redis-sentinel/redis-sentinel.module';
@@ -30,6 +32,7 @@ import { ProfilerModule } from './modules/profiler/profiler.module';
 import { CliModule } from './modules/cli/cli.module';
 import { StaticsManagementModule } from './modules/statics-management/statics-management.module';
 import { ExcludeRouteMiddleware } from './middleware/exclude-route.middleware';
+import SubpathProxyMiddleware from './middleware/subpath-proxy.middleware';
 import { routes } from './app.routes';
 
 const SERVER_CONFIG = config.get('server') as Config['server'];
@@ -39,7 +42,7 @@ const PATH_CONFIG = config.get('dir_path') as Config['dir_path'];
   imports: [
     LocalDatabaseModule,
     CoreModule,
-    RouterModule.forRoutes(routes),
+    RouterModule.register(routes),
     AutodiscoveryModule,
     RedisEnterpriseModule,
     CloudModule.register(),
@@ -60,11 +63,17 @@ const PATH_CONFIG = config.get('dir_path') as Config['dir_path'];
     DatabaseImportModule,
     TriggeredFunctionsModule,
     CloudModule.register(),
+    AiChatModule,
+    AiQueryModule.register(),
     ...(SERVER_CONFIG.staticContent
       ? [
         ServeStaticModule.forRoot({
           rootPath: join(__dirname, '..', '..', '..', 'ui', 'dist'),
           exclude: ['/api/**', `${SERVER_CONFIG.customPluginsUri}/**`, `${SERVER_CONFIG.staticUri}/**`],
+          serveRoot: SERVER_CONFIG.proxyPath ? `/${SERVER_CONFIG.proxyPath}` : '',
+          serveStaticOptions: {
+            index: false,
+          },
         }),
       ]
       : []),
@@ -105,6 +114,10 @@ export class AppModule implements OnModuleInit, NestModule {
   }
 
   configure(consumer: MiddlewareConsumer) {
+    consumer
+      .apply(SubpathProxyMiddleware)
+      .forRoutes('*');
+
     consumer
       .apply(SingleUserAuthMiddleware)
       .exclude(...SERVER_CONFIG.excludeAuthRoutes)

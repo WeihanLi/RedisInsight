@@ -2,6 +2,7 @@ import { set, cloneDeep } from 'lodash'
 import React from 'react'
 import { EuiSpacer } from '@elastic/eui'
 import { parseCloudOAuthError } from 'uiSrc/utils'
+import { EXTERNAL_LINKS } from 'uiSrc/constants/links'
 
 const responseData = { response: { data: { }, status: 500 } }
 
@@ -18,7 +19,7 @@ const parseCloudOAuthErrorTests = [
           <EuiSpacer size="xs" />
           Try again later.
           <EuiSpacer size="s" />
-          If the issue persists, <a href="https://github.com/RedisInsight/RedisInsight/issues" target="_blank" rel="noreferrer">report the issue.</a>
+          If the issue persists, <a href={EXTERNAL_LINKS.githubIssues} target="_blank" rel="noreferrer">report the issue.</a>
         </>
       )
     })],
@@ -36,9 +37,9 @@ const parseCloudOAuthErrorTests = [
       title: 'Server error',
       message: (
         <>
-          Try restarting RedisInsight.
+          Try restarting Redis Insight.
           <EuiSpacer size="s" />
-          If the issue persists, <a href="https://github.com/RedisInsight/RedisInsight/issues" target="_blank" rel="noreferrer">report the issue.</a>
+          If the issue persists, <a href={EXTERNAL_LINKS.githubIssues} target="_blank" rel="noreferrer">report the issue.</a>
         </>
       )
     })],
@@ -51,20 +52,18 @@ const parseCloudOAuthErrorTests = [
           <EuiSpacer size="xs" />
           Try again later.
           <EuiSpacer size="s" />
-          If the issue persists, <a href="https://github.com/RedisInsight/RedisInsight/issues" target="_blank" rel="noreferrer">report the issue.</a>
+          If the issue persists, <a href={EXTERNAL_LINKS.githubIssues} target="_blank" rel="noreferrer">report the issue.</a>
         </>
       )
     })],
   [{ errorCode: 11_001 },
     set(cloneDeep(responseData), 'response.data', {
-      title: 'Unauthorized',
+      title: 'Session expired',
       message: (
         <>
-          Your Redis Cloud authorization failed.
-          <EuiSpacer size="xs" />
-          Try again later.
+          Sign in again to continue working with Redis Cloud.
           <EuiSpacer size="s" />
-          If the issue persists, <a href="https://github.com/RedisInsight/RedisInsight/issues" target="_blank" rel="noreferrer">report the issue.</a>
+          If the issue persists, <a href={EXTERNAL_LINKS.githubIssues} target="_blank" rel="noreferrer">report the issue.</a>
         </>
       )
     })],
@@ -91,7 +90,7 @@ const parseCloudOAuthErrorTests = [
         <>
           Your Redis Cloud authorization failed.
           <EuiSpacer size="xs" />
-          Remove the invalid API key from RedisInsight and try again.
+          Remove the invalid API key from Redis Insight and try again.
           <EuiSpacer size="s" />
           Open the Settings page to manage Redis Cloud API keys.
         </>
