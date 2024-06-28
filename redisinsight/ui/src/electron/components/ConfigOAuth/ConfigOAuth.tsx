@@ -16,7 +16,7 @@ import { BrowserStorageItem, Pages } from 'uiSrc/constants'
 import { cloudSelector, fetchSubscriptionsRedisCloud, setSSOFlow } from 'uiSrc/slices/instances/cloud'
 import { CloudAuthResponse, CloudAuthStatus, CloudJobName, CloudJobStep } from 'uiSrc/electron/constants'
 import { addErrorNotification, addInfiniteNotification, removeInfiniteNotification } from 'uiSrc/slices/app/notifications'
-import { parseCloudOAuthError } from 'uiSrc/utils'
+import { parseCustomError } from 'uiSrc/utils'
 import { INFINITE_MESSAGES, InfiniteMessagesIds } from 'uiSrc/components/notifications/components'
 import { localStorageService } from 'uiSrc/services'
 import { CustomError, OAuthSocialAction } from 'uiSrc/slices/interfaces'
@@ -51,6 +51,7 @@ const ConfigOAuth = () => {
     if (isSelectAccout) return
 
     if (ssoFlowRef.current === OAuthSocialAction.SignIn) {
+      dispatch(setSSOFlow(undefined))
       closeInfinityNotification()
       return
     }
@@ -90,7 +91,6 @@ const ConfigOAuth = () => {
 
   const closeInfinityNotification = () => {
     dispatch(removeInfiniteNotification(InfiniteMessagesIds.oAuthProgress))
-    dispatch(setSSOFlow(undefined))
   }
 
   const cloudOauthCallback = (_e: any, { status, message = '', error }: CloudAuthResponse) => {
@@ -111,7 +111,7 @@ const ConfigOAuth = () => {
         return
       }
 
-      const err = parseCloudOAuthError((error as CustomError) || message || '')
+      const err = parseCustomError((error as CustomError) || message || '')
       dispatch(setOAuthCloudSource(null))
       dispatch(signInFailure(err?.response?.data?.message || message))
       dispatch(addErrorNotification(err))

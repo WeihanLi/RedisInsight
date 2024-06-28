@@ -46,7 +46,7 @@
       .euiIEFlexWrapFix .truncateText {
         display: flex;
         overflow: visible;
-        white-space: normal;
+        white-space: normal !important;
       }
     }
 
@@ -149,7 +149,7 @@
 .snoozeBtn {
   svg {
     fill: var(--recommendationBgColor) !important;
-    g {
+    g, circle, path {
       stroke: currentColor !important;
     }
   }

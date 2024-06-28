@@ -1,3 +1,5 @@
+import { isArray } from 'lodash';
+import { v4 as uuidv4 } from 'uuid';
 import { Socket } from 'socket.io-client';
 import { Injectable, Logger } from '@nestjs/common';
 import { ClientContext, SessionMetadata } from 'src/common/models';
@@ -17,9 +19,12 @@ import {
 } from 'src/modules/ai/query/models';
 import { AiQueryMessageRepository } from 'src/modules/ai/query/repositories/ai-query.message.repository';
 import { AiQueryAuthProvider } from 'src/modules/ai/query/providers/auth/ai-query-auth.provider';
-import { classToClass } from 'src/utils';
+import { classToClass, Config } from 'src/utils';
 import { plainToClass } from 'class-transformer';
 import { AiQueryContextRepository } from 'src/modules/ai/query/repositories/ai-query.context.repository';
+import config from 'src/utils/config';
+
+const aiConfig = config.get('ai') as Config['ai'];
 
 const COMMANDS_WHITELIST = {
   'ft.search': true,
@@ -56,6 +61,22 @@ export class AiQueryService {
     return steps;
   }
 
+  static limitQueryReply(reply: any, maxResults = aiConfig.queryMaxResults) {
+    let results = reply;
+    if (isArray(reply)) {
+      results = reply.slice(0, maxResults);
+      results = results.map((nested) => {
+        if (Array.isArray(nested)) {
+          AiQueryService.limitQueryReply(nested, aiConfig.queryMaxNestedElements);
+        }
+        return nested;
+      });
+      return results;
+    }
+
+    return results;
+  }
+
   static prepareHistory(messages: AiQueryMessage[]): string[][] {
     const history = [];
     messages.forEach((message) => {
@@ -77,6 +98,10 @@ export class AiQueryService {
     return history;
   }
 
+  static getConversationId(messages: AiQueryMessage[]): string {
+    return messages?.[messages.length - 1]?.conversationId || uuidv4();
+  }
+
   async stream(
     sessionMetadata: SessionMetadata,
     databaseId: string,
@@ -89,6 +114,7 @@ export class AiQueryService {
       try {
         const auth = await this.aiQueryAuthProvider.getAuthData(sessionMetadata);
         const history = await this.aiQueryMessageRepository.list(sessionMetadata, databaseId, auth.accountId);
+        const conversationId = AiQueryService.getConversationId(history);
 
         const client = await this.databaseClientFactory.getOrCreateClient({
           sessionMetadata,
@@ -111,6 +137,7 @@ export class AiQueryService {
           type: AiQueryMessageType.HumanMessage,
           content: dto.content,
           databaseId,
+          conversationId,
           accountId: auth.accountId,
           createdAt: new Date(),
         });
@@ -119,10 +146,11 @@ export class AiQueryService {
           type: AiQueryMessageType.AiMessage,
           content: '',
           databaseId,
+          conversationId,
           accountId: auth.accountId,
         });
 
-        socket = await this.aiQueryProvider.getSocket(sessionMetadata, auth);
+        socket = await this.aiQueryProvider.getSocket(auth);
 
         socket.on(AiQueryWsEvents.REPLY_CHUNK, (chunk) => {
           answer.content += chunk;
@@ -150,7 +178,7 @@ export class AiQueryService {
 
             return cb(indexContext);
           } catch (e) {
-            this.logger.warn('Unable to create index content', e);
+            this.logger.warn('Unable to create index context', e);
             return cb(e.message);
           }
         });
@@ -187,7 +215,15 @@ export class AiQueryService {
             reject(error);
           });
 
-          socket.emitWithAck('stream', dto.content, context, AiQueryService.prepareHistory(history))
+          socket.emitWithAck(
+            AiQueryWsEvents.STREAM,
+            dto.content,
+            context,
+            AiQueryService.prepareHistory(history),
+            {
+              conversationId,
+            },
+          )
             .then((ack) => {
               if (ack?.error) {
                 return reject(ack.error);

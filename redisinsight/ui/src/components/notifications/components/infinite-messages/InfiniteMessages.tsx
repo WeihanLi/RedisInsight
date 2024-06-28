@@ -10,6 +10,7 @@ import {
   EuiTitle
 } from '@elastic/eui'
 import { find } from 'lodash'
+import cx from 'classnames'
 import { CloudJobStep } from 'uiSrc/electron/constants'
 import ExternalLink from 'uiSrc/components/base/external-link'
 import ChampagneIcon from 'uiSrc/assets/img/icons/champagne.svg'
@@ -42,7 +43,7 @@ export const INFINITE_MESSAGES = {
       >
         <EuiFlexGroup justifyContent="flexEnd" direction="row" gutterSize="none">
           <EuiFlexItem grow={false}>
-            <EuiLoadingSpinner className="infiniteMessage__icon" />
+            <EuiLoadingSpinner className={cx('infiniteMessage__icon', styles.loading)} />
           </EuiFlexItem>
           <EuiFlexItem grow>
             <EuiTitle className="infiniteMessage__title">
@@ -67,7 +68,7 @@ export const INFINITE_MESSAGES = {
       >
         <EuiFlexGroup justifyContent="flexEnd" direction="row" gutterSize="none">
           <EuiFlexItem grow={false}>
-            <EuiLoadingSpinner className="infiniteMessage__icon" />
+            <EuiLoadingSpinner className={cx('infiniteMessage__icon', styles.loading)} />
           </EuiFlexItem>
           <EuiFlexItem grow>
             <EuiTitle className="infiniteMessage__title">
@@ -259,7 +260,7 @@ export const INFINITE_MESSAGES = {
       >
         <EuiFlexGroup justifyContent="flexEnd" direction="row" gutterSize="none">
           <EuiFlexItem grow={false}>
-            <EuiLoadingSpinner className="infiniteMessage__icon" />
+            <EuiLoadingSpinner className={cx('infiniteMessage__icon', styles.loading)} />
           </EuiFlexItem>
           <EuiFlexItem grow>
             <EuiTitle className="infiniteMessage__title">
@@ -311,4 +312,45 @@ export const INFINITE_MESSAGES = {
       </div>
     )
   }),
+  SUCCESS_DEPLOY_PIPELINE: () => ({
+    id: InfiniteMessagesIds.appUpdateAvailable,
+    className: 'wide',
+    Inner: (
+      <div
+        role="presentation"
+        onMouseDown={(e) => { e.preventDefault() }}
+        onMouseUp={(e) => { e.preventDefault() }}
+        data-testid="success-deploy-pipeline-notification"
+      >
+        <EuiFlexGroup justifyContent="flexEnd" direction="row" gutterSize="none">
+          <EuiFlexItem className="infiniteMessage__icon" grow={false}>
+            <EuiIcon type={ChampagneIcon} size="original" />
+          </EuiFlexItem>
+          <EuiFlexItem grow>
+            <EuiTitle className="infiniteMessage__title"><span>Congratulations!</span></EuiTitle>
+            <EuiText size="xs">
+              Deployment completed successfully!
+              <br />
+              Check out the pipeline statistics page.
+            </EuiText>
+            <EuiSpacer size="m" />
+            {/* // TODO remove display none when statistics page will be available */}
+            <EuiFlexGroup style={{ display: 'none' }} justifyContent="flexEnd" alignItems="center" gutterSize="none">
+              <EuiFlexItem grow={false}>
+                <EuiButton
+                  fill
+                  size="s"
+                  color="secondary"
+                  onClick={() => {}}
+                  data-testid="notification-connect-db"
+                >
+                  Statistics
+                </EuiButton>
+              </EuiFlexItem>
+            </EuiFlexGroup>
+          </EuiFlexItem>
+        </EuiFlexGroup>
+      </div>
+    )
+  })
 }
