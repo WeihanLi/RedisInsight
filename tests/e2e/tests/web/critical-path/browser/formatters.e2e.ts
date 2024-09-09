@@ -2,7 +2,7 @@ import { Selector } from 'testcafe';
 import { keyLength, KeyTypesTexts, rte } from '../../../../helpers/constants';
 import { addKeysViaCli, deleteKeysViaCli, formattersKeyTypes } from '../../../../helpers/keys';
 import { Common, DatabaseHelper } from '../../../../helpers';
-import { BrowserPage } from '../../../../pageObjects';
+import { BrowserPage, SettingsPage, WorkbenchPage } from '../../../../pageObjects';
 import { commonUrl, ossStandaloneConfig } from '../../../../helpers/conf';
 import { DatabaseAPIRequests } from '../../../../helpers/api/api-database';
 import {
@@ -12,6 +12,7 @@ import {
     formattersWithTooltipSet,
     fromBinaryFormattersSet,
     notEditableFormattersSet,
+    vectorFormattersSet,
     formatters
 } from '../../../../test-data/formatters-data';
 import { phpData } from '../../../../test-data/formatters';
@@ -19,6 +20,8 @@ import { phpData } from '../../../../test-data/formatters';
 const browserPage = new BrowserPage();
 const databaseHelper = new DatabaseHelper();
 const databaseAPIRequests = new DatabaseAPIRequests();
+const workbenchPage = new WorkbenchPage();
+const settingsPage = new SettingsPage();
 
 const keysData = formattersKeyTypes.map(item =>
     ({ ...item, keyName: `${item.keyName}` + '-' + `${Common.generateWord(keyLength)}` }));
@@ -232,6 +235,23 @@ notEditableFormattersSet.forEach(formatter => {
                 await t.expect(editBtn.hasAttribute('disabled')).notOk(`Key ${key.textType} is disabled for ${formatter.format} formatter`);
             }
         }
+    });
+});
+vectorFormattersSet.forEach(formatter => {
+    test(` Verify failed to convert message for  ${formatter.format}`, async t => {
+        // Verify for Vector 32-bit, Vector 64-bit formatters
+        const failedMessage = `Failed to convert to ${formatter.format}`;
+        const invalidBinaryValue = '1001101010011001100110011001100110011001100110011111000100111111000000000000000000000000';
+        // Open Hash key details
+        await browserPage.openKeyDetailsByKeyName(keysData[0].keyName);
+        // Add valid value in Binary format for conversion
+        await browserPage.selectFormatter('Binary');
+        await browserPage.editHashKeyValue(invalidBinaryValue ?? '');
+        await browserPage.selectFormatter(formatter.format);
+        await t.expect(browserPage.hashFieldValue.find(browserPage.cssJsonValue).exists).notOk(` Value is formatted to ${formatter.format}`);
+        await t.hover(browserPage.hashValuesList);
+        // Verify that tooltip with conversion failed message displayed
+        await t.expect(browserPage.tooltip.textContent).contains(failedMessage, `"${failedMessage}" is not displayed in tooltip`);
     });
 });
 test('Verify that user can format timestamp value', async t => {
