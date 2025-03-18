@@ -26,6 +26,10 @@ export default {
   WRONG_DATABASE_TYPE: 'Wrong database type.',
   CONNECTION_TIMEOUT:
     'The connection has timed out, please check the connection details.',
+  DB_CONNECTION_TIMEOUT:
+    'The connection timed out. Try increasing the timeout in the connection settings.',
+  DB_CLUSTER_CONNECT_FAILED:
+    'Redis Insight requires connectivity to all nodes of your clustered database. Ensure all nodes are accessible or increase the timeout.',
   SERVER_CLOSED_CONNECTION: 'Server closed the connection.',
   UNABLE_TO_ESTABLISH_CONNECTION: 'Unable to establish connection.',
   RECONNECTING_TO_DATABASE: 'Reconnecting to the redis database.',
@@ -106,7 +110,7 @@ export default {
   CLOUD_TASK_NOT_FOUND: 'Cloud task was not found',
   CLOUD_DATABASE_IN_FAILED_STATE: 'Cloud database is in the failed state',
   CLOUD_DATABASE_IN_UNEXPECTED_STATE: 'Cloud database is in unexpected state',
-  CLOUD_DATABASE_ALREADY_EXISTS_FREE: 'Free database already exists',
+  CLOUD_DATABASE_ALREADY_EXISTS_FREE: 'Free trial database already exists',
   CLOUD_PLAN_NOT_FOUND_FREE: 'Unable to find free cloud plan',
   CLOUD_SUBSCRIPTION_ALREADY_EXISTS_FREE: 'Free subscription already exists',
   COMMON_DEFAULT_IMPORT_ERROR: 'Unable to import default data',
@@ -121,4 +125,7 @@ export default {
   RDI_TIMEOUT_ERROR: 'Encountered a timeout error while attempting to retrieve data',
   RDI_VALIDATION_ERROR: 'Validation error',
   INVALID_RDI_INSTANCE_ID: 'Invalid rdi instance id.',
+
+  // database settings
+  DATABASE_SETTINGS_NOT_FOUND: 'Could not find settings for this database',
 };

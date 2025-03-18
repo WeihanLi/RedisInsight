@@ -144,7 +144,7 @@ export class Database {
     example: '2021-01-06T12:44:39.000Z',
   })
   @Expose()
-  lastConnection: Date;
+  lastConnection?: Date;
 
   @ApiProperty({
     description: 'Date of creation',
@@ -300,4 +300,22 @@ export class Database {
   @IsNotEmpty()
   @IsOptional()
   version?: string;
+
+  @ApiPropertyOptional({
+    description: 'Force client connection as standalone',
+    type: Boolean,
+  })
+  @Expose()
+  @IsBoolean()
+  @IsOptional()
+  forceStandalone?: boolean;
+
+  @ApiPropertyOptional({
+    description: 'Whether the database was created from a file or environment variables at startup',
+    type: Boolean,
+  })
+  @Expose()
+  @IsBoolean()
+  @IsOptional()
+  isPreSetup?: boolean;
 }

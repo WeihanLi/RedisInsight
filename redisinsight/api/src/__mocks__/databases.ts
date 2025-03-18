@@ -80,6 +80,12 @@ export const mockDatabaseModules = [
     semanticVersion: '1.2.5',
   },
 ];
+
+export const mockDatabaseWithModules = Object.assign(new Database(), {
+  ...mockDatabase,
+  modules: mockDatabaseModules,
+});
+
 export const mockDatabaseWithCloudDetails = Object.assign(new Database(), {
   ...mockDatabase,
   cloudDetails: mockCloudDatabaseDetails,
@@ -255,6 +261,7 @@ export const mockDatabaseRepository = jest.fn(() => ({
     pick(mockDatabase, 'id', 'name'),
     pick(mockDatabase, 'id', 'name'),
   ]),
+  cleanupPreSetup: jest.fn().mockResolvedValue({ affected: 0 }),
 }));
 
 export const mockDatabaseService = jest.fn(() => ({
