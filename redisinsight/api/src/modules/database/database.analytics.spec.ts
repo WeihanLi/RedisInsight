@@ -10,7 +10,10 @@ import {
 import { TelemetryEvents } from 'src/constants';
 import { DEFAULT_SUMMARY as DEFAULT_REDIS_MODULES_SUMMARY } from 'src/utils/redis-modules-summary';
 import { DatabaseAnalytics } from 'src/modules/database/database.analytics';
-import { HostingProvider } from 'src/modules/database/entities/database.entity';
+import {
+  Encoding,
+  HostingProvider,
+} from 'src/modules/database/entities/database.entity';
 
 describe('DatabaseAnalytics', () => {
   let service: DatabaseAnalytics;
@@ -20,10 +23,7 @@ describe('DatabaseAnalytics', () => {
 
   beforeEach(async () => {
     const module: TestingModule = await Test.createTestingModule({
-      providers: [
-        EventEmitter2,
-        DatabaseAnalytics,
-      ],
+      providers: [EventEmitter2, DatabaseAnalytics],
     }).compile();
 
     service = await module.get(DatabaseAnalytics);
@@ -38,7 +38,8 @@ describe('DatabaseAnalytics', () => {
         {
           ...mockDatabaseWithTlsAuth,
           ssh: true,
-        }, mockRedisGeneralInfo,
+        },
+        mockRedisGeneralInfo,
       );
 
       expect(sendEventSpy).toHaveBeenCalledWith(
@@ -64,6 +65,7 @@ describe('DatabaseAnalytics', () => {
           forceStandalone: 'false',
           useDecompression: mockDatabaseWithTlsAuth.compressor,
           serverName: 'valkey',
+          keyNameFormat: Encoding.UNICODE,
           ...DEFAULT_REDIS_MODULES_SUMMARY,
         },
       );
@@ -73,7 +75,11 @@ describe('DatabaseAnalytics', () => {
         ...mockDatabase,
       };
 
-      service.sendInstanceAddedEvent(mockSessionMetadata, instance, mockRedisGeneralInfo);
+      service.sendInstanceAddedEvent(
+        mockSessionMetadata,
+        instance,
+        mockRedisGeneralInfo,
+      );
 
       expect(sendEventSpy).toHaveBeenCalledWith(
         mockSessionMetadata,
@@ -98,6 +104,7 @@ describe('DatabaseAnalytics', () => {
           forceStandalone: 'false',
           useDecompression: mockDatabaseWithTlsAuth.compressor,
           serverName: 'valkey',
+          keyNameFormat: Encoding.UNICODE,
           ...DEFAULT_REDIS_MODULES_SUMMARY,
         },
       );
@@ -105,15 +112,14 @@ describe('DatabaseAnalytics', () => {
     it('should emit event without additional info', () => {
       const instance = {
         ...mockDatabaseWithTlsAuth,
-        modules: [{ name: 'search', version: 20000 }, { name: 'rediSQL', version: 1 }],
+        modules: [
+          { name: 'search', version: 20000 },
+          { name: 'rediSQL', version: 1 },
+        ],
       };
-      service.sendInstanceAddedEvent(
-        mockSessionMetadata,
-        instance,
-        {
-          version: mockRedisGeneralInfo.version,
-        },
-      );
+      service.sendInstanceAddedEvent(mockSessionMetadata, instance, {
+        version: mockRedisGeneralInfo.version,
+      });
 
       expect(sendEventSpy).toHaveBeenCalledWith(
         mockSessionMetadata,
@@ -137,6 +143,7 @@ describe('DatabaseAnalytics', () => {
           databaseIndex: 0,
           forceStandalone: 'false',
           useDecompression: mockDatabaseWithTlsAuth.compressor,
+          keyNameFormat: Encoding.UNICODE,
           ...DEFAULT_REDIS_MODULES_SUMMARY,
           RediSearch: {
             loaded: true,
@@ -151,15 +158,14 @@ describe('DatabaseAnalytics', () => {
       const instance = {
         ...mockDatabaseWithTlsAuth,
         db: 2,
-        modules: [{ name: 'search', version: 20000 }, { name: 'rediSQL', version: 1 }],
+        modules: [
+          { name: 'search', version: 20000 },
+          { name: 'rediSQL', version: 1 },
+        ],
       };
-      service.sendInstanceAddedEvent(
-        mockSessionMetadata,
-        instance,
-        {
-          version: mockRedisGeneralInfo.version,
-        },
-      );
+      service.sendInstanceAddedEvent(mockSessionMetadata, instance, {
+        version: mockRedisGeneralInfo.version,
+      });
 
       expect(sendEventSpy).toHaveBeenCalledWith(
         mockSessionMetadata,
@@ -183,6 +189,7 @@ describe('DatabaseAnalytics', () => {
           databaseIndex: 2,
           forceStandalone: 'false',
           useDecompression: mockDatabaseWithTlsAuth.compressor,
+          keyNameFormat: Encoding.UNICODE,
           ...DEFAULT_REDIS_MODULES_SUMMARY,
           RediSearch: {
             loaded: true,
@@ -191,6 +198,25 @@ describe('DatabaseAnalytics', () => {
           customModules: [{ name: 'rediSQL', version: 1 }],
           serverName: null,
         },
+      );
+    });
+
+    it('should emit event with keyNameFormat', () => {
+      service.sendInstanceAddedEvent(
+        mockSessionMetadata,
+        {
+          ...mockDatabaseWithTlsAuth,
+          keyNameFormat: Encoding.HEX,
+        },
+        mockRedisGeneralInfo,
+      );
+
+      expect(sendEventSpy).toHaveBeenCalledWith(
+        mockSessionMetadata,
+        TelemetryEvents.RedisInstanceAdded,
+        expect.objectContaining({
+          keyNameFormat: Encoding.HEX,
+        }),
       );
     });
   });
@@ -223,6 +249,7 @@ describe('DatabaseAnalytics', () => {
           timeout: mockDatabaseWithTlsAuth.timeout / 1_000, // milliseconds to seconds
           useDecompression: mockDatabaseWithTlsAuth.compressor,
           forceStandalone: 'false',
+          keyNameFormat: Encoding.UNICODE,
           previousValues: {
             connectionType: prev.connectionType,
             provider: prev.provider,
@@ -232,6 +259,7 @@ describe('DatabaseAnalytics', () => {
             useSNI: 'enabled',
             useSSH: 'disabled',
             forceStandalone: 'false',
+            keyNameFormat: Encoding.UNICODE,
           },
         },
       );
@@ -262,6 +290,7 @@ describe('DatabaseAnalytics', () => {
           timeout: mockDatabaseWithTlsAuth.timeout / 1_000, // milliseconds to seconds
           useDecompression: mockDatabaseWithTlsAuth.compressor,
           forceStandalone: 'false',
+          keyNameFormat: Encoding.UNICODE,
           previousValues: {
             connectionType: prev.connectionType,
             provider: prev.provider,
@@ -271,6 +300,7 @@ describe('DatabaseAnalytics', () => {
             verifyTLSCertificate: 'disabled',
             useTLSAuthClients: 'disabled',
             forceStandalone: 'false',
+            keyNameFormat: Encoding.UNICODE,
           },
         },
       );
@@ -301,6 +331,7 @@ describe('DatabaseAnalytics', () => {
           timeout: mockDatabaseWithTlsAuth.timeout / 1_000, // milliseconds to seconds
           useDecompression: mockDatabaseWithTlsAuth.compressor,
           forceStandalone: 'true',
+          keyNameFormat: Encoding.UNICODE,
           previousValues: {
             connectionType: prev.connectionType,
             provider: prev.provider,
@@ -310,6 +341,7 @@ describe('DatabaseAnalytics', () => {
             verifyTLSCertificate: 'disabled',
             useTLSAuthClients: 'disabled',
             forceStandalone: 'false',
+            keyNameFormat: Encoding.UNICODE,
           },
         },
       );
@@ -340,6 +372,7 @@ describe('DatabaseAnalytics', () => {
           timeout: mockDatabaseWithTlsAuth.timeout / 1_000, // milliseconds to seconds
           useDecompression: mockDatabaseWithTlsAuth.compressor,
           forceStandalone: 'false',
+          keyNameFormat: Encoding.UNICODE,
           previousValues: {
             connectionType: prev.connectionType,
             provider: prev.provider,
@@ -349,6 +382,7 @@ describe('DatabaseAnalytics', () => {
             verifyTLSCertificate: 'disabled',
             useTLSAuthClients: 'disabled',
             forceStandalone: 'false',
+            keyNameFormat: Encoding.UNICODE,
           },
         },
       );
@@ -380,6 +414,7 @@ describe('DatabaseAnalytics', () => {
           timeout: mockDatabaseWithTlsAuth.timeout / 1_000, // milliseconds to seconds
           useDecompression: mockDatabaseWithTlsAuth.compressor,
           forceStandalone: 'true',
+          keyNameFormat: Encoding.UNICODE,
           previousValues: {
             connectionType: prev.connectionType,
             provider: prev.provider,
@@ -389,6 +424,51 @@ describe('DatabaseAnalytics', () => {
             verifyTLSCertificate: 'disabled',
             useTLSAuthClients: 'disabled',
             forceStandalone: 'true',
+            keyNameFormat: Encoding.UNICODE,
+          },
+        },
+      );
+    });
+
+    it('should emit event when keyNameFormat is changed', () => {
+      const prev = mockDatabaseWithTlsAuth;
+      const cur = {
+        ...mockDatabaseWithTlsAuth,
+        provider: HostingProvider.RE_CLUSTER,
+        tls: undefined,
+        verifyServerCert: false,
+        caCert: null,
+        clientCert: null,
+        keyNameFormat: Encoding.HEX,
+      };
+      service.sendInstanceEditedEvent(mockSessionMetadata, prev, cur);
+
+      expect(sendEventSpy).toHaveBeenCalledWith(
+        mockSessionMetadata,
+        TelemetryEvents.RedisInstanceEditedByUser,
+        {
+          databaseId: cur.id,
+          connectionType: cur.connectionType,
+          provider: HostingProvider.RE_CLUSTER,
+          useTLS: 'disabled',
+          verifyTLSCertificate: 'disabled',
+          useTLSAuthClients: 'disabled',
+          useSNI: 'enabled',
+          useSSH: 'disabled',
+          timeout: mockDatabaseWithTlsAuth.timeout / 1_000, // milliseconds to seconds
+          useDecompression: mockDatabaseWithTlsAuth.compressor,
+          forceStandalone: 'false',
+          keyNameFormat: Encoding.HEX,
+          previousValues: {
+            connectionType: prev.connectionType,
+            provider: prev.provider,
+            useTLS: 'enabled',
+            verifyTLSCertificate: 'enabled',
+            useTLSAuthClients: 'enabled',
+            useSNI: 'enabled',
+            useSSH: 'disabled',
+            forceStandalone: 'false',
+            keyNameFormat: Encoding.UNICODE,
           },
         },
       );
@@ -436,7 +516,11 @@ describe('DatabaseAnalytics', () => {
 
   describe('sendConnectionFailedEvent', () => {
     it('should emit ConnectionFailed event', () => {
-      service.sendConnectionFailedEvent(mockSessionMetadata, mockDatabase, httpException);
+      service.sendConnectionFailedEvent(
+        mockSessionMetadata,
+        mockDatabase,
+        httpException,
+      );
 
       expect(sendFailedEventSpy).toHaveBeenCalledWith(
         mockSessionMetadata,
@@ -451,14 +535,11 @@ describe('DatabaseAnalytics', () => {
 
   describe('sendDatabaseConnectedClientListEvent', () => {
     it('should emit event', () => {
-      service.sendDatabaseConnectedClientListEvent(
-        mockSessionMetadata,
-        {
-          databaseId: mockDatabase.id,
-          version: mockDatabase.version,
-          resp: '2',
-        },
-      );
+      service.sendDatabaseConnectedClientListEvent(mockSessionMetadata, {
+        databaseId: mockDatabase.id,
+        version: mockDatabase.version,
+        resp: '2',
+      });
 
       expect(sendEventSpy).toHaveBeenCalledWith(
         mockSessionMetadata,

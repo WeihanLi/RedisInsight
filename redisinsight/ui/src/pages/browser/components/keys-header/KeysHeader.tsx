@@ -1,6 +1,13 @@
 /* eslint-disable react/destructuring-assignment */
 /* eslint-disable react/no-this-in-sfc */
-import { EuiButton, EuiButtonIcon, EuiCheckbox, EuiFlexItem, EuiFlexGroup, EuiIcon, EuiPopover, EuiToolTip } from '@elastic/eui'
+import {
+  EuiButton,
+  EuiButtonIcon,
+  EuiCheckbox,
+  EuiIcon,
+  EuiPopover,
+  EuiToolTip,
+} from '@elastic/eui'
 import cx from 'classnames'
 import React, { FC, Ref, SVGProps, useRef, useState } from 'react'
 import { useDispatch, useSelector } from 'react-redux'
@@ -8,21 +15,46 @@ import AutoSizer from 'react-virtualized-auto-sizer'
 import ColumnsIcon from 'uiSrc/assets/img/icons/columns.svg?react'
 import TreeViewIcon from 'uiSrc/assets/img/icons/treeview.svg?react'
 import KeysSummary from 'uiSrc/components/keys-summary'
-import { SCAN_COUNT_DEFAULT, SCAN_TREE_COUNT_DEFAULT } from 'uiSrc/constants/api'
-import { appContextDbConfig, resetBrowserTree, setBrowserKeyListDataLoaded, setBrowserSelectedKey, setBrowserShownColumns, } from 'uiSrc/slices/app/context'
+import {
+  SCAN_COUNT_DEFAULT,
+  SCAN_TREE_COUNT_DEFAULT,
+} from 'uiSrc/constants/api'
+import {
+  appContextDbConfig,
+  resetBrowserTree,
+  setBrowserKeyListDataLoaded,
+  setBrowserSelectedKey,
+  setBrowserShownColumns,
+} from 'uiSrc/slices/app/context'
 
-import { changeKeyViewType, fetchKeys, keysSelector, resetKeyInfo, resetKeysData } from 'uiSrc/slices/browser/keys'
+import {
+  changeKeyViewType,
+  fetchKeys,
+  keysSelector,
+  resetKeyInfo,
+  resetKeysData,
+} from 'uiSrc/slices/browser/keys'
 import { redisearchSelector } from 'uiSrc/slices/browser/redisearch'
 import { connectedInstanceSelector } from 'uiSrc/slices/instances/instances'
-import { KeysStoreData, KeyViewType, SearchMode } from 'uiSrc/slices/interfaces/keys'
-import { getBasedOnViewTypeEvent, sendEventTelemetry, TelemetryEvent } from 'uiSrc/telemetry'
+import {
+  KeysStoreData,
+  KeyViewType,
+  SearchMode,
+} from 'uiSrc/slices/interfaces/keys'
+import {
+  getBasedOnViewTypeEvent,
+  sendEventTelemetry,
+  TelemetryEvent,
+} from 'uiSrc/telemetry'
 
 import { OnboardingStepName, OnboardingSteps } from 'uiSrc/constants/onboarding'
 import { incrementOnboardStepAction } from 'uiSrc/slices/app/features'
 import { AutoRefresh, OnboardingTour } from 'uiSrc/components'
 import { ONBOARDING_FEATURES } from 'uiSrc/components/onboarding-features'
+import { BrowserColumns, KeyValueFormat } from 'uiSrc/constants'
 
-import { BrowserColumns } from 'uiSrc/constants'
+import { FlexItem, Row } from 'uiSrc/components/base/layout/flex'
+import { setConnectivityError } from 'uiSrc/slices/app/connectivity'
 import styles from './styles.module.scss'
 
 const HIDE_REFRESH_LABEL_WIDTH = 640
@@ -58,7 +90,9 @@ const KeysHeader = (props: Props) => {
     nextCursor,
   } = props
 
-  const { id: instanceId } = useSelector(connectedInstanceSelector)
+  const { id: instanceId, keyNameFormat } = useSelector(
+    connectedInstanceSelector,
+  )
   const { viewType, searchMode, isFiltered } = useSelector(keysSelector)
   const { shownColumns } = useSelector(appContextDbConfig)
   const { selectedIndex } = useSelector(redisearchSelector)
@@ -69,27 +103,40 @@ const KeysHeader = (props: Props) => {
 
   const dispatch = useDispatch()
 
+  // TODO: Check if encoding can be reused from BE and FE
+  const format = keyNameFormat as unknown as KeyValueFormat
+  const isTreeViewDisabled =
+    (format || KeyValueFormat.Unicode) === KeyValueFormat.HEX
   const viewTypes: ISwitchType<KeyViewType>[] = [
     {
       type: KeyViewType.Browser,
       tooltipText: 'List View',
       ariaLabel: 'List view button',
       dataTestId: 'view-type-browser-btn',
-      isActiveView() { return viewType === this.type },
+      isActiveView() {
+        return viewType === this.type
+      },
       getClassName() {
         return cx(styles.viewTypeBtn, { [styles.active]: this.isActiveView() })
       },
       getIconType() {
         return 'menu'
       },
-      onClick() { handleSwitchView(this.type) }
+      onClick() {
+        handleSwitchView(this.type)
+      },
     },
     {
       type: KeyViewType.Tree,
-      tooltipText: 'Tree View',
+      tooltipText: isTreeViewDisabled
+        ? 'Tree View is unavailable when the HEX key name format is selected.'
+        : 'Tree View',
       ariaLabel: 'Tree view button',
       dataTestId: 'view-type-list-btn',
-      isActiveView() { return viewType === this.type },
+      disabled: isTreeViewDisabled,
+      isActiveView() {
+        return viewType === this.type
+      },
       getClassName() {
         return cx(styles.viewTypeBtn, { [styles.active]: this.isActiveView() })
       },
@@ -98,18 +145,21 @@ const KeysHeader = (props: Props) => {
       },
       onClick() {
         handleSwitchView(this.type)
-        dispatch(incrementOnboardStepAction(
-          OnboardingSteps.BrowserTreeView,
-          undefined,
-          () => sendEventTelemetry({
-            event: TelemetryEvent.ONBOARDING_TOUR_ACTION_MADE,
-            eventData: {
-              databaseId: instanceId,
-              step: OnboardingStepName.BrowserTreeView,
-            }
-          })
-        ))
-      }
+        dispatch(
+          incrementOnboardStepAction(
+            OnboardingSteps.BrowserTreeView,
+            undefined,
+            () =>
+              sendEventTelemetry({
+                event: TelemetryEvent.ONBOARDING_TOUR_ACTION_MADE,
+                eventData: {
+                  databaseId: instanceId,
+                  step: OnboardingStepName.BrowserTreeView,
+                },
+              }),
+          ),
+        )
+      },
     },
   ]
 
@@ -118,30 +168,40 @@ const KeysHeader = (props: Props) => {
     height: '36px !important',
   }
 
-  const toggleColumnsConfigVisibility = () => setColumnsConfigShown(!columnsConfigShown)
+  const toggleColumnsConfigVisibility = () =>
+    setColumnsConfigShown(!columnsConfigShown)
 
   const handleRefreshKeys = () => {
-    dispatch(fetchKeys(
-      {
-        searchMode,
-        cursor: '0',
-        count: viewType === KeyViewType.Browser ? SCAN_COUNT_DEFAULT : SCAN_TREE_COUNT_DEFAULT,
-      },
-      (data) => {
-        const keys = Array.isArray(data) ? data[0].keys : data.keys;
+    dispatch(
+      fetchKeys(
+        {
+          searchMode,
+          cursor: '0',
+          count:
+            viewType === KeyViewType.Browser
+              ? SCAN_COUNT_DEFAULT
+              : SCAN_TREE_COUNT_DEFAULT,
+        },
+        (data) => {
+          const keys = Array.isArray(data) ? data[0].keys : data.keys
 
-        if (!keys.length) {
-          dispatch(resetKeyInfo());
-          dispatch(setBrowserSelectedKey(null));
-        }
+          if (!keys.length) {
+            dispatch(resetKeyInfo())
+            dispatch(setBrowserSelectedKey(null))
+          }
 
-        dispatch(setBrowserKeyListDataLoaded(searchMode, true));
-      },
-      () => dispatch(setBrowserKeyListDataLoaded(searchMode, false)),
-    ))
+          dispatch(setBrowserKeyListDataLoaded(searchMode, true))
+          dispatch(setConnectivityError(null))
+        },
+        () => dispatch(setBrowserKeyListDataLoaded(searchMode, false)),
+      ),
+    )
   }
 
-  const handleEnableAutoRefresh = (enableAutoRefresh: boolean, refreshRate: string) => {
+  const handleEnableAutoRefresh = (
+    enableAutoRefresh: boolean,
+    refreshRate: string,
+  ) => {
     const browserViewEvent = enableAutoRefresh
       ? TelemetryEvent.BROWSER_KEY_LIST_AUTO_REFRESH_ENABLED
       : TelemetryEvent.BROWSER_KEY_LIST_AUTO_REFRESH_DISABLED
@@ -153,11 +213,14 @@ const KeysHeader = (props: Props) => {
       eventData: {
         databaseId: instanceId,
         refreshRate: +refreshRate,
-      }
+      },
     })
   }
 
-  const handleChangeAutoRefreshRate = (enableAutoRefresh: boolean, refreshRate: string) => {
+  const handleChangeAutoRefreshRate = (
+    enableAutoRefresh: boolean,
+    refreshRate: string,
+  ) => {
     if (enableAutoRefresh) {
       handleEnableAutoRefresh(enableAutoRefresh, refreshRate)
     }
@@ -166,16 +229,22 @@ const KeysHeader = (props: Props) => {
   const handleScanMore = (config: any) => {
     handleScanMoreClick?.({
       ...config,
-      stopIndex: (viewType === KeyViewType.Browser ? SCAN_COUNT_DEFAULT : SCAN_TREE_COUNT_DEFAULT) - 1,
+      stopIndex:
+        (viewType === KeyViewType.Browser
+          ? SCAN_COUNT_DEFAULT
+          : SCAN_TREE_COUNT_DEFAULT) - 1,
     })
   }
 
   const handleSwitchView = (type: KeyViewType) => {
     sendEventTelemetry({
-      event: type === KeyViewType.Tree ? TelemetryEvent.TREE_VIEW_OPENED : TelemetryEvent.LIST_VIEW_OPENED,
+      event:
+        type === KeyViewType.Tree
+          ? TelemetryEvent.TREE_VIEW_OPENED
+          : TelemetryEvent.LIST_VIEW_OPENED,
       eventData: {
-        databaseId: instanceId
-      }
+        databaseId: instanceId,
+      },
     })
 
     dispatch(resetBrowserTree())
@@ -200,7 +269,9 @@ const KeysHeader = (props: Props) => {
     if (columnType === BrowserColumns.TTL) {
       status ? shown.push(BrowserColumns.TTL) : hidden.push(BrowserColumns.TTL)
     } else if (columnType === BrowserColumns.Size) {
-      status ? shown.push(BrowserColumns.Size) : hidden.push(BrowserColumns.Size)
+      status
+        ? shown.push(BrowserColumns.Size)
+        : hidden.push(BrowserColumns.Size)
     }
 
     dispatch(setBrowserShownColumns(newColumns))
@@ -209,20 +280,21 @@ const KeysHeader = (props: Props) => {
       eventData: {
         databaseId: instanceId,
         shown,
-        hidden
-      }
+        hidden,
+      },
     })
   }
 
   const ViewSwitch = () => (
-    <div
-      className={styles.viewTypeSwitch}
-      data-testid="view-type-switcher"
-    >
+    <div className={styles.viewTypeSwitch} data-testid="view-type-switcher">
       <OnboardingTour options={ONBOARDING_FEATURES.BROWSER_TREE_VIEW}>
         <>
           {viewTypes.map((view) => (
-            <EuiToolTip content={view.tooltipText} position="top" key={view.tooltipText}>
+            <EuiToolTip
+              content={view.tooltipText}
+              position="top"
+              key={view.tooltipText}
+            >
               <EuiButtonIcon
                 iconSize="s"
                 className={view.getClassName()}
@@ -230,6 +302,7 @@ const KeysHeader = (props: Props) => {
                 aria-label={view.ariaLabel}
                 onClick={() => view.onClick()}
                 data-testid={view.dataTestId}
+                disabled={view.disabled || false}
               />
             </EuiToolTip>
           ))}
@@ -249,15 +322,19 @@ const KeysHeader = (props: Props) => {
                   items={keysState.keys}
                   totalItemsCount={keysState.total}
                   scanned={
-                    isSearched
-                      || (isFiltered && searchMode === SearchMode.Pattern)
-                      || viewType === KeyViewType.Tree ? keysState.scanned : 0
+                    isSearched ||
+                    (isFiltered && searchMode === SearchMode.Pattern) ||
+                    viewType === KeyViewType.Tree
+                      ? keysState.scanned
+                      : 0
                   }
                   loading={loading}
                   showScanMore={
-                    !(searchMode === SearchMode.Redisearch
-                      && keysState.maxResults
-                      && keysState.keys.length >= keysState.maxResults)
+                    !(
+                      searchMode === SearchMode.Redisearch &&
+                      keysState.maxResults &&
+                      keysState.keys.length >= keysState.maxResults
+                    )
                   }
                   scanMoreStyle={scanMoreStyle}
                   loadMoreItems={handleScanMore}
@@ -266,7 +343,9 @@ const KeysHeader = (props: Props) => {
               </div>
               <div className={styles.keysControlsWrapper}>
                 <AutoRefresh
-                  disabled={searchMode === SearchMode.Redisearch && !selectedIndex}
+                  disabled={
+                    searchMode === SearchMode.Redisearch && !selectedIndex
+                  }
                   disabledRefreshButtonMessage="Select an index to refresh keys."
                   iconSize="xs"
                   postfix="keys"
@@ -287,7 +366,7 @@ const KeysHeader = (props: Props) => {
                     anchorClassName={styles.anchorWrapper}
                     panelClassName={styles.popoverWrapper}
                     closePopover={() => setColumnsConfigShown(false)}
-                    button={(
+                    button={
                       <EuiButton
                         size="s"
                         color="secondary"
@@ -297,23 +376,30 @@ const KeysHeader = (props: Props) => {
                         data-testid="btn-columns-actions"
                         aria-label="columns"
                       >
-                        <span className={styles.columnsButtonText}>Columns</span>
+                        <span className={styles.columnsButtonText}>
+                          Columns
+                        </span>
                       </EuiButton>
-                    )}
+                    }
                   >
-                    <EuiFlexGroup alignItems="center" gutterSize="m">
-                      <EuiFlexItem>
+                    <Row align="center" gap="m">
+                      <FlexItem grow>
                         <EuiCheckbox
                           id="show-key-size"
                           name="show-key-size"
                           label="Key size"
                           checked={shownColumns.includes(BrowserColumns.Size)}
-                          onChange={(e) => changeColumnsShown(e.target.checked, BrowserColumns.Size)}
+                          onChange={(e) =>
+                            changeColumnsShown(
+                              e.target.checked,
+                              BrowserColumns.Size,
+                            )
+                          }
                           data-testid="show-key-size"
                           className={styles.checkbox}
                         />
-                      </EuiFlexItem>
-                      <EuiFlexItem>
+                      </FlexItem>
+                      <FlexItem grow>
                         <EuiToolTip
                           content="Hide the key size to avoid performance issues when working with large keys."
                           position="top"
@@ -328,14 +414,16 @@ const KeysHeader = (props: Props) => {
                             data-testid="key-size-info-icon"
                           />
                         </EuiToolTip>
-                      </EuiFlexItem>
-                    </EuiFlexGroup>
+                      </FlexItem>
+                    </Row>
                     <EuiCheckbox
                       id="show-ttl"
                       name="show-ttl"
                       label="TTL"
                       checked={shownColumns.includes(BrowserColumns.TTL)}
-                      onChange={(e) => changeColumnsShown(e.target.checked, BrowserColumns.TTL)}
+                      onChange={(e) =>
+                        changeColumnsShown(e.target.checked, BrowserColumns.TTL)
+                      }
                       data-testid="show-ttl"
                     />
                   </EuiPopover>

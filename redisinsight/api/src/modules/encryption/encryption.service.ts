@@ -1,11 +1,12 @@
-import { Injectable } from '@nestjs/common';
+import { forwardRef, Inject, Injectable } from '@nestjs/common';
 import { KeytarEncryptionStrategy } from 'src/modules/encryption/strategies/keytar-encryption.strategy';
 import { PlainEncryptionStrategy } from 'src/modules/encryption/strategies/plain-encryption.strategy';
-import { EncryptionResult, EncryptionStrategy } from 'src/modules/encryption/models';
-import { IEncryptionStrategy } from 'src/modules/encryption/strategies/encryption-strategy.interface';
 import {
-  UnsupportedEncryptionStrategyException,
-} from 'src/modules/encryption/exceptions';
+  EncryptionResult,
+  EncryptionStrategy,
+} from 'src/modules/encryption/models';
+import { IEncryptionStrategy } from 'src/modules/encryption/strategies/encryption-strategy.interface';
+import { UnsupportedEncryptionStrategyException } from 'src/modules/encryption/exceptions';
 import { SettingsService } from 'src/modules/settings/settings.service';
 import { KeyEncryptionStrategy } from 'src/modules/encryption/strategies/key-encryption.strategy';
 import { ConstantsProvider } from 'src/modules/constants/providers/constants.provider';
@@ -13,6 +14,7 @@ import { ConstantsProvider } from 'src/modules/constants/providers/constants.pro
 @Injectable()
 export class EncryptionService {
   constructor(
+    @Inject(forwardRef(() => SettingsService))
     private readonly settingsService: SettingsService,
     private readonly keytarEncryptionStrategy: KeytarEncryptionStrategy,
     private readonly plainEncryptionStrategy: PlainEncryptionStrategy,
@@ -25,9 +27,7 @@ export class EncryptionService {
    * It is needed for users to choose one and save it in the app settings
    */
   async getAvailableEncryptionStrategies(): Promise<string[]> {
-    const strategies = [
-      EncryptionStrategy.PLAIN,
-    ];
+    const strategies = [EncryptionStrategy.PLAIN];
 
     if (await this.keyEncryptionStrategy.isAvailable()) {
       strategies.push(EncryptionStrategy.KEY);
@@ -36,6 +36,14 @@ export class EncryptionService {
     }
 
     return strategies;
+  }
+
+  /**
+   * Checks if any encryption strategy other than PLAIN is available
+   */
+  async isEncryptionAvailable(): Promise<boolean> {
+    const strategies = await this.getAvailableEncryptionStrategies();
+    return strategies.length > 1 || (strategies.length === 1 && strategies[0] !== EncryptionStrategy.PLAIN);
   }
 
   /**
