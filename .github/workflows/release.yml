@@ -31,7 +31,7 @@ jobs:
         yarn install
         yarn --cwd redisinsight/api/
     - name: Build
-      run: yarn build:statics
+      run: yarn build:statics:win
     - name: Package
       run: yarn package:prod
 
